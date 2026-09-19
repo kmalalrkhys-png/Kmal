@@ -2,11 +2,6 @@ name: Run Windows 11 with Tailscale & QEMU
 
 on:
   workflow_dispatch:
-    inputs:
-      tailscale_authkey:
-        description: 'Tailscale Auth Key (أدخل مفتاح المصادقة الخاص بك هنا)'
-        required: true
-        type: string
 
 jobs:
   run-windows:
@@ -26,33 +21,31 @@ jobs:
       - name: Connect to Tailscale VPN
         uses: tailscale/github-action@v2
         with:
-          authkey: ${{ github.event.inputs.tailscale_authkey }}
+          authkey: ${{ secrets.TAILSCALE_AUTHKEY }}
           args: --hostname=windows-qemu-runner --accept-routes
 
-      - name: Download & Extract VectraVM Windows Image
+      - name: Download & Extract Windows Image
         run: |
-          echo "Downloading Windows VHD (windows1121h2)..."
-          # ضع رابط التحميل المباشر لملفك هنا
-          wget -O windows1121h2.7z "رابط_ملف_الـ_7z_المباشر"
+          echo "Downloading Windows VHD archive..."
+          wget -O windows11.7z "https://archive.org/download/limbo-pc-emulator-images-7-nbab/Windows%2011%2025H2.7z"
           
           echo "Extracting VHD file..."
-          7z x windows1121h2.7z
+          7z x windows11.7z
           ls -la
 
-      - name: Start Windows VM with QEMU & KVM (16GB RAM Context)
+      - name: Start Windows VM with QEMU & KVM
         run: |
           echo "Launching QEMU with KVM..."
-          # تخصيص رام قوية واستغلال إمكانيات السيرفر
           qemu-system-x86_64 \
             -enable-kvm \
             -m 8G \
             -smp 4 \
             -cpu host \
-            -drive file=windows1121h2.vhd,format=vpc \
+            -drive file=*.vhd,format=vpc \
             -net nic,model=virtio -net user \
             -vga virtio \
             -display vnc=0.0.0.0:0 &
             
           echo "Windows is running and connected via Tailscale!"
-          # إبقاء الـ Action مفعلة ومفتوحة لمدة ساعتين لتستمتع بالتحكم بها
           sleep 7200
+          
